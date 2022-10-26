@@ -111,7 +111,7 @@ fn read_users() -> Users {
 
 fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     // create new user file in the db folder
-    let mut users = read_users();
+    let users = read_users();
     let mut user_exists = false;
     for user in users.users_data.iter() {
         if user.username == username {
@@ -142,7 +142,7 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
 }
 
 fn add_admin() {
-    let mut users = read_users();
+    let users = read_users();
     let mut admin_exists = false;
     for user in users.users_data.iter() {
         if user.username == "admin" {
@@ -167,7 +167,7 @@ fn add_admin() {
 
 fn _reset_database() {
     // delete all .db files in the db folder
-    let mut files = std::fs::read_dir("db").unwrap();
+    let files = std::fs::read_dir("db").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
@@ -180,7 +180,7 @@ fn _reset_database() {
 
 fn _encrypt_database() {
     // encrypt all .db files in the db folder
-    let mut files = std::fs::read_dir("db").unwrap();
+    let files = std::fs::read_dir("db").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
@@ -198,7 +198,7 @@ fn _encrypt_database() {
 
 fn  _decrypt_database() {
     // decrypt all .db files in the db folder
-    let mut files = std::fs::read_dir("db").unwrap();
+    let files = std::fs::read_dir("db").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
@@ -231,7 +231,7 @@ fn _print_database() {
 
 fn _change_username(password: &str, uid: u128, old_username: &str, new_username: &str) -> ResponseStruct {
     // change username of a user
-    let mut users = read_users();
+    let users = read_users();
     let mut user_exists = false;
     let mut user_index = 0;
     for (index, user) in users.users_data.iter().enumerate() {
@@ -273,7 +273,7 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
 
 fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     // delete a user
-    let mut users = read_users();
+    let users = read_users();
     let mut user_exists = false;
     let mut user_index = 0;
     for (index, user) in users.users_data.iter().enumerate() {
@@ -304,7 +304,7 @@ fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
 
 fn clean_empty_accounts() {
     // delete all empty accounts
-    let mut users = read_users();
+    let users = read_users();
     let mut user_exists = false;
     let mut user_index = 0;
     for (index, user) in users.users_data.iter().enumerate() {
