@@ -179,9 +179,9 @@ checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
 
 [[package]]
 name = "libc"
-version = "0.2.136"
+version = "0.2.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55edcf6c0bb319052dea84732cf99db461780fd5e8d3eb46ab6ff312ab31f197"
+checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
 
 [[package]]
 name = "libm"
@@ -250,6 +250,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ea3d908b0e36316caf9e9e2c4625cdde190a7e6f440d794667ed17a1855e725"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quantum_coin"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "magic-crypt",
+ "num-traits",
+ "serde",
+ "serde_json",
+ "sha2 0.10.6",
+ "threadpool",
 ]
 
 [[package]]
@@ -364,19 +377,6 @@ name = "unicode-ident"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ceab39d59e4c9499d4e5a8ee0e2735b891bb7308ac83dfb4e80cad195c9f6f3"
-
-[[package]]
-name = "untitled_money_system"
-version = "0.1.0"
-dependencies = [
- "hex-literal",
- "magic-crypt",
- "num-traits",
- "serde",
- "serde_json",
- "sha2 0.10.6",
- "threadpool",
-]
 
 [[package]]
 name = "version_check"

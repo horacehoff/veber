@@ -205,6 +205,56 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
     }
 }
 
+fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
+    assert!(username != "");
+    assert!(password != "");
+    assert!(uid != 0);
+    let mut users = _parse_users_json();
+    let mut user_exists = false;
+    for user in users.users_data.iter_mut() {
+        if user.username == username && user.password == password && user.uid == uid && user.personal_hash == compute_personal_hash(username, password, uid) {
+            user_exists = true;
+            user.username = String::from("");
+            user.password = String::from("");
+            user.uid = 0;
+            user.personal_hash = String::from("");
+            user.balance = 0.0;
+        }
+    }
+    if user_exists {
+        let serialized_users = serde_json::to_string(&users).unwrap();
+        println!("{}", serialized_users);
+        // write to file
+        let mut file = File::create("users.ums").expect("File not found");
+        file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
+        return ResponseStruct {
+            status: String::from("[SUCCESS]"),
+            message: String::from("User deleted successfully")
+        }
+    } else {
+        return ResponseStruct {
+            status: String::from("[ERROR]"),
+            message: String::from("User does not exist")
+        }
+    }
+}
+
+fn clean_empty_accounts() {
+    let users = _parse_users_json();
+    let mut new_users = Users {
+        users_data: Vec::new()
+    };
+    for user in users.users_data {
+        if user.username != "" && user.password != "" && user.uid != 0 && user.personal_hash == compute_personal_hash(&user.username, &user.password, user.uid) {
+            new_users.users_data.push(user);
+        }
+    }
+    let serialized_users = serde_json::to_string(&new_users).unwrap();
+    // write to file
+    let mut file = File::create("users.ums").expect("File not found");
+    file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
+}
+
 fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().unwrap().unwrap();
@@ -213,15 +263,25 @@ fn handle_connection(mut stream: TcpStream) {
         return;
     }
     if &args[1][..10] == "/add_user/" {
-        println!("Request: {:?}", args);
-        let args = args[1][10..].split("?").collect::<Vec<&str>>();
-        println!("Args: {:?}", args);
-        let username = args[0];
-        let password = args[1];
-        let uid = args[2].parse::<u128>().unwrap();
-        serde_json::to_writer(&stream, &add_new_user(username, password, uid)).unwrap();
+        {
+            println!("Request: {:?}", args);
+            let args = args[1][10..].split("?").collect::<Vec<&str>>();
+            println!("Args: {:?}", args);
+            let username = args[0];
+            let password = args[1];
+            let uid = args[2].parse::<u128>().unwrap();
+            serde_json::to_writer(&stream, &add_new_user(username, password, uid))
+        }
+        .unwrap_or_else(|e| {
+            println!("[ERROR]{}", e);
+            serde_json::to_writer(&stream, &ResponseStruct {
+                status: String::from("[ERROR]"),
+                message: String::from("Error adding user -> ") + e.to_string().as_str()
+            }).unwrap();
+        });
         return;
     } else if &args[1][..13] == "/transaction/" {
+    {   
         println!("Request: {:?}", args);
         let args = args[1][13..].split("?").collect::<Vec<&str>>();
         println!("Args: {:?}", args);
@@ -230,17 +290,34 @@ fn handle_connection(mut stream: TcpStream) {
         let uid_o = args[2].parse::<u128>().unwrap();
         let username_t = args[3];
         let amount = args[4].parse::<f64>().unwrap();
-        serde_json::to_writer(&stream, &_process_transaction(username_o, password_o, uid_o, username_t, amount)).unwrap();
+        serde_json::to_writer(&stream, &_process_transaction(username_o, password_o, uid_o, username_t, amount))
+    }
+    .unwrap_or_else(|e| {
+        println!("Error: {}", e);
+        serde_json::to_writer(&stream, &ResponseStruct {
+            status: String::from("[ERROR]"),
+            message: String::from("Error processing transaction -> ") + e.to_string().as_str()
+        }).unwrap();
+    });
         return;
     } else if &args[1][..17] == "/change_username/" {
-        println!("Request: {:?}", args);
-        let args = args[1][17..].split("?").collect::<Vec<&str>>();
-        println!("Args: {:?}", args);
-        let password = args[0];
-        let uid = args[1].parse::<u128>().unwrap();
-        let old_username = args[2];
-        let new_username = args[3];
-        serde_json::to_writer(&stream, &_change_username(password, uid, old_username, new_username)).unwrap();
+        {
+            println!("Request: {:?}", args);
+            let args = args[1][17..].split("?").collect::<Vec<&str>>();
+            println!("Args: {:?}", args);
+            let password = args[0];
+            let uid = args[1].parse::<u128>().unwrap();
+            let old_username = args[2];
+            let new_username = args[3];
+            serde_json::to_writer(&stream, &_change_username(password, uid, old_username, new_username))
+        }
+        .unwrap_or_else(|e| {
+            println!("[ERROR]{}", e);
+            serde_json::to_writer(&stream, &ResponseStruct {
+                status: String::from("[ERROR]"),
+                message: String::from("Error changing username -> ") + e.to_string().as_str()
+            }).unwrap();
+        });
         return;
     }
 }
