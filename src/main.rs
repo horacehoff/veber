@@ -121,7 +121,7 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     }
     if user_exists {
         return ResponseStruct {
-            status: String::from("[ERROR]"),
+            status: String::from("ERROR"),
             message: String::from("User already exists")
         }
     }
@@ -137,7 +137,7 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     let mut file = File::create(format!("data/{}.db", encrypt(KEY, username))).unwrap();
     file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
     return ResponseStruct {
-        status: String::from("[SUCCESS]"),
+        status: String::from("SUCCESS"),
         message: String::from("User created")
     }
 }
@@ -243,14 +243,14 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
     }
     if !user_exists {
         return ResponseStruct {
-            status: String::from("[ERROR]"),
+            status: String::from("ERROR"),
             message: String::from("User does not exist")
         }
     }
     let user = users.users_data.get(user_index).unwrap();
     if user.password != password || user.uid != uid {
         return ResponseStruct {
-            status: String::from("[ERROR]"),
+            status: String::from("ERROR"),
             message: String::from("Wrong password or UID")
         }
     }
@@ -267,7 +267,7 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
     file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
     std::fs::remove_file(format!("data/{}.db", encrypt(KEY, old_username))).unwrap();
     return ResponseStruct {
-        status: String::from("[SUCCESS]"),
+        status: String::from("SUCCESS"),
         message: String::from("Username changed")
     }
 }
@@ -285,20 +285,20 @@ fn _delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     }
     if !user_exists {
         return ResponseStruct {
-            status: String::from("[ERROR]"),
+            status: String::from("ERROR"),
             message: String::from("User does not exist")
         }
     }
     let user = users.users_data.get(user_index).unwrap();
     if user.password != password || user.uid != uid {
         return ResponseStruct {
-            status: String::from("[ERROR]"),
+            status: String::from("ERROR"),
             message: String::from("Wrong password or UID")
         }
     }
     std::fs::remove_file(format!("data/{}.db", encrypt(KEY, username))).unwrap();
     return ResponseStruct {
-        status: String::from("[SUCCESS]"),
+        status: String::from("SUCCESS"),
         message: String::from("User deleted")
     }
 }
@@ -340,9 +340,9 @@ fn handle_connection(mut stream: TcpStream) {
             serde_json::to_writer(&stream, &add_new_user(username, password, uid))
         }
         .unwrap_or_else(|e| {
-            println!("[ERROR]{}", e);
+            println!("ERROR{}", e);
             serde_json::to_writer(&stream, &ResponseStruct {
-                status: String::from("[ERROR]"),
+                status: String::from("ERROR"),
                 message: String::from("Error adding user -> ") + e.to_string().as_str()
             }).unwrap();
         });
@@ -362,7 +362,7 @@ fn handle_connection(mut stream: TcpStream) {
     .unwrap_or_else(|e| {
         println!("Error: {}", e);
         serde_json::to_writer(&stream, &ResponseStruct {
-            status: String::from("[ERROR]"),
+            status: String::from("ERROR"),
             message: String::from("Error processing transaction -> ") + e.to_string().as_str()
         }).unwrap();
     });
@@ -379,9 +379,9 @@ fn handle_connection(mut stream: TcpStream) {
             serde_json::to_writer(&stream, &_change_username(password, uid, old_username, new_username))
         }
         .unwrap_or_else(|e| {
-            println!("[ERROR]{}", e);
+            println!("ERROR{}", e);
             serde_json::to_writer(&stream, &ResponseStruct {
-                status: String::from("[ERROR]"),
+                status: String::from("ERROR"),
                 message: String::from("Error changing username -> ") + e.to_string().as_str()
             }).unwrap();
         });

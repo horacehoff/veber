@@ -83,12 +83,12 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
 
         
         return ResponseStruct {
-            status: String::from("[SUCCESS]"),
+            status: String::from("SUCCESS"),
             message: String::from("Transaction successful")
         }
     } else {
         return ResponseStruct {
-            status: String::from("[ERROR]"),
+            status: String::from("ERROR"),
             message: String::from("Transaction failed")
         }
     }
