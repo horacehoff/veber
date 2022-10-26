@@ -1,12 +1,12 @@
 use std::{fs::File, io::Write};
-use crate::{compute_personal_hash, _parse_users_json, ResponseStruct, Users, User, IS_LIVE, encrypt, KEY};
+use crate::{compute_personal_hash, ResponseStruct, Users, User, IS_LIVE, encrypt, KEY, read_users};
 
 
 
 
 pub fn _check_transaction_hash(username: &str, password: &str, uid: u128) -> bool {
     let hash = compute_personal_hash(username, password, uid);
-    let users = _parse_users_json();
+    let users = read_users();
     for user in users.users_data {
         if user.username == username && user.password == password && user.uid == uid && user.personal_hash == hash {
             return true;
@@ -16,7 +16,7 @@ pub fn _check_transaction_hash(username: &str, password: &str, uid: u128) -> boo
 }
 
 pub fn _get_user_balance(username: &str, password: &str, uid: u128) -> f64 {
-    let users = _parse_users_json();
+    let users = read_users();
     for user in users.users_data {
         if user.username == username && user.password == password && user.uid == uid {
             return user.balance;
@@ -29,6 +29,7 @@ pub fn _check_transaction(username_sender: &str, password_sender: &str, uid_send
     if _check_transaction_hash(username_sender, password_sender, uid_sender) {
         // process transaction
         if (_get_user_balance(username_sender, password_sender, uid_sender) - amount) >= 0.0 {
+            println!("TELL ME SOMETHING");
             return true;
         } else {
             return false;
@@ -39,7 +40,7 @@ pub fn _check_transaction(username_sender: &str, password_sender: &str, uid_send
 }
 
 pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_sender: u128, username_t: &str, amount: f64) -> ResponseStruct {
-    let users = _parse_users_json();
+    let users = read_users();
     let mut new_users = Users {
         users_data: Vec::new()
     };
@@ -50,8 +51,8 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
                     username: user.username,
                     password: user.password,
                     uid: user.uid,
-                    personal_hash: user.personal_hash,
-                    balance: user.balance - amount
+                    balance: user.balance - amount,
+                    personal_hash: user.personal_hash
                 };
                 new_users.users_data.push(new_user);
             } else if user.username == username_t {
@@ -59,16 +60,29 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
                     username: user.username,
                     password: user.password,
                     uid: user.uid,
-                    personal_hash: user.personal_hash,
-                    balance: user.balance + amount
+                    balance: user.balance + amount,
+                    personal_hash: user.personal_hash
                 };
                 new_users.users_data.push(new_user);
-            } else {
-                new_users.users_data.push(user);
             }
         }
-        let mut file = File::create("users.db").unwrap();
-        file.write_all(encrypt(KEY, &serde_json::to_string(&new_users).unwrap()).as_bytes()).unwrap();
+        let mut to_search:Vec<String> = Vec::new();
+        to_search.push(encrypt(KEY, username_sender));
+        to_search.push(encrypt(KEY, username_t));
+        // delete the file of the first user
+        std::fs::remove_file(format!("db/{}.db", to_search[0])).unwrap();
+        // delete the file of the second user
+        std::fs::remove_file(format!("db/{}.db", to_search[1])).unwrap();
+        // write the new data of the first user
+        let mut file = File::create(format!("db/{}.db", to_search[0])).unwrap();
+        let first_user_data = encrypt(KEY, serde_json::to_string(&new_users.users_data[0]).unwrap().to_string().as_str());
+        file.write_all(first_user_data.as_bytes()).unwrap();
+        // write the new data of the second user
+        let mut file = File::create(format!("db/{}.db", to_search[1])).unwrap();
+        let second_user_data = encrypt(KEY, serde_json::to_string(&new_users.users_data[1]).unwrap().to_string().as_str());
+        file.write_all(second_user_data.as_bytes()).unwrap();
+
+        
         return ResponseStruct {
             status: String::from("[SUCCESS]"),
             message: String::from("Transaction successful")
