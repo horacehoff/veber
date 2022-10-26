@@ -12,6 +12,7 @@ sha2 = "0.10.6"
 hex-literal = "0.3.4"
 threadpool = "1.8.1"
 magic-crypt = "3.1.12"
+try-catch = "0.2.2"
 
 [dependencies.num-traits]
 version = "0.2"

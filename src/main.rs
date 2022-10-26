@@ -6,6 +6,7 @@ use threadpool::ThreadPool;
 use transactions::_process_transaction;
 use std::net::TcpListener;
 mod transactions;
+use try_catch::catch;
 
 static mut IS_LIVE: bool = true;
 static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
@@ -323,7 +324,7 @@ fn clean_empty_accounts() {
 
 fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
-    let request_line = buf_reader.lines().next().unwrap().unwrap();
+    let request_line = buf_reader.lines().next().expect("[ERROR.THREADPOOL_REQUEST_LINE]").expect("[ERROR.THREADPOOL_REQUEST_LINE]");
     let args = request_line.split_whitespace().collect::<Vec<&str>>();
     if args[1].contains("/undefined") {
         return;
@@ -396,10 +397,17 @@ fn main() {
         println!("Server started on port 7979");
         let thread_pool = ThreadPool::new(10);
         for stream in listener.incoming() {
-            let stream = stream.unwrap();
-            thread_pool.execute(|| {
-                handle_connection(stream);
-            });
+            catch! {
+                try {
+                    let stream = stream.unwrap();
+                    thread_pool.execute(|| {
+                        handle_connection(stream);
+                    });
+                } 
+                catch _error {
+                    println!("[ERROR.THREADPOOL_CONNECTION_HANDLING]");
+                }
+            }
         }
     }
 }
