@@ -272,7 +272,7 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
     }
 }
 
-fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
+fn _delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     // delete a user
     let users = read_users();
     let mut user_exists = false;
@@ -303,7 +303,7 @@ fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     }
 }
 
-fn clean_empty_accounts() {
+fn _clean_empty_accounts() {
     // delete all empty accounts
     let users = read_users();
     let mut user_exists = false;
@@ -319,7 +319,7 @@ fn clean_empty_accounts() {
     }
     let user = users.users_data.get(user_index).unwrap();
     std::fs::remove_file(format!("data/{}.db", encrypt(KEY, &user.username))).unwrap();
-    clean_empty_accounts();
+    _clean_empty_accounts();
 }
 
 fn handle_connection(mut stream: TcpStream) {
