@@ -85,174 +85,240 @@ fn decrypt(key: &str, data: &str) -> String {
     }
 }
 
-fn read_users() -> String {
-    // read users.db file
-    let mut file = File::open("users.db").expect("File not found");
-    // read file contents
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Something went wrong reading the file");
-    // print file contents
-    contents = decrypt(KEY, &contents);
-    return contents;
-}
-
-fn _parse_users_json() -> Users{
-    let json = read_users();
-    let deserialized_users: Users = serde_json::from_str(&json).unwrap();
-    return deserialized_users;
+fn read_users() -> Users {
+    // read all .db files in the db folder and concat them in a vector
+    let mut users: Vec<User> = Vec::new();
+    let files = std::fs::read_dir("db").unwrap();
+    for file in files {
+        let file = file.unwrap();
+        let path = file.path();
+        let path_str = path.to_str().unwrap();
+        if path_str.ends_with(".db") {
+            let mut file = File::open(path_str).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+            contents = decrypt(KEY, contents.as_str());
+            let user: User = serde_json::from_str(&contents).unwrap();
+            users.push(user);
+        }
+    }
+    let users_struct = Users {
+        users_data: users
+    };
+    let users_json = users_struct;
+    return users_json
 }
 
 fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
-    assert!(username != "");
-    assert!(password != "");
-    assert!(uid != 0);
-    // verify if user exists
-    let users = _parse_users_json();
-    for user in users.users_data {
-        if user.username == username || user.uid == uid || unsafe{!IS_LIVE} {
-            return ResponseStruct {
-                status: String::from("[ERROR]"),
-                message: String::from("User already exists")
-            }
+    // create new user file in the db folder
+    let mut users = read_users();
+    let mut user_exists = false;
+    for user in users.users_data.iter() {
+        if user.username == username {
+            user_exists = true;
         }
     }
-    let mut users = _parse_users_json();
+    if user_exists {
+        return ResponseStruct {
+            status: String::from("[ERROR]"),
+            message: String::from("User already exists")
+        }
+    }
+    let personal_hash = compute_personal_hash(username, password, uid);
     let new_user = User {
-        username: username.to_string(),
-        password: password.to_string(),
+        username: String::from(username),
+        password: String::from(password),
         uid: uid,
-        personal_hash: compute_personal_hash(username, password, uid),
+        personal_hash: personal_hash,
         balance: 0.0
     };
-    users.users_data.push(new_user);
-    let serialized_users = serde_json::to_string(&users).unwrap();
-    println!("{}", serialized_users);
-    // write to file
-    let mut file = File::create("users.db").expect("File not found");
-    file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
+    let users_json = serde_json::to_string(&new_user).unwrap();
+    let mut file = File::create(format!("db/{}.db", encrypt(KEY, username))).unwrap();
+    file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
     return ResponseStruct {
         status: String::from("[SUCCESS]"),
-        message: String::from("User added successfully")
+        message: String::from("User created")
     }
 }
 
+fn add_admin() {
+    let mut users = read_users();
+    let mut admin_exists = false;
+    for user in users.users_data.iter() {
+        if user.username == "admin" {
+            admin_exists = true;
+        }
+    }
+    if !admin_exists {
+        let personal_hash = compute_personal_hash("admin", "admin", 11111111111111111111111111111111);
+        let new_user = User {
+            username: String::from("admin"),
+            password: String::from("admin"),
+            uid: 11111111111111111111111111111111,
+            personal_hash: personal_hash,
+            balance: 50000.0
+        };
+        let users_json = serde_json::to_string(&new_user).unwrap();
+        let mut file = File::create(format!("db/{}.db", encrypt(KEY, "admin"))).unwrap();
+        file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
+    }
+}
 
 
 fn _reset_database() {
-    let mut file = File::create("users.db").expect("File not found");
-    file.write_all(encrypt(KEY,"{\"users_data\":[]}").as_bytes()).expect("Something went wrong writing the file");
+    // delete all .db files in the db folder
+    let mut files = std::fs::read_dir("db").unwrap();
+    for file in files {
+        let file = file.unwrap();
+        let path = file.path();
+        let path_str = path.to_str().unwrap();
+        if path_str.ends_with(".db") {
+            std::fs::remove_file(path_str).unwrap();
+        }
+    }
 }
 
 fn _encrypt_database() {
-    let mut file = File::open("users.db").expect("File not found");
-    // read file contents
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Something went wrong reading the file");
-    // print file contents
-    let mut file = File::create("users.db").expect("File not found");
-    file.write_all(encrypt(KEY,&contents).as_bytes()).expect("Something went wrong writing the file");
+    // encrypt all .db files in the db folder
+    let mut files = std::fs::read_dir("db").unwrap();
+    for file in files {
+        let file = file.unwrap();
+        let path = file.path();
+        let path_str = path.to_str().unwrap();
+        if path_str.ends_with(".db") {
+            let mut file = File::open(path_str).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+            let encrypted = encrypt(KEY, &contents);
+            let mut file = File::create(path_str).unwrap();
+            file.write_all(encrypted.as_bytes()).unwrap();
+        }
+    }
 }
 
 fn  _decrypt_database() {
-    let mut file = File::open("users.db").expect("File not found");
-    // read file contents
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Something went wrong reading the file");
-    // print file contents
-    let mut file = File::create("users.db").expect("File not found");
-    file.write_all(decrypt(KEY,&contents).as_bytes()).expect("Something went wrong writing the file");
+    // decrypt all .db files in the db folder
+    let mut files = std::fs::read_dir("db").unwrap();
+    for file in files {
+        let file = file.unwrap();
+        let path = file.path();
+        let path_str = path.to_str().unwrap();
+        if path_str.ends_with(".db") {
+            let mut file = File::open(path_str).unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+            let decrypted = decrypt(KEY, &contents);
+            let mut file = File::create(path_str).unwrap();
+            file.write_all(decrypted.as_bytes()).unwrap();
+        }
+    }
 }
 
 fn _print_database() {
-    let users = _parse_users_json();
-    for user in users.users_data {
+    // print all .db files in the db folder
+    let users = read_users();
+    // print all users nicely
+    println!("---------------------");
+    for user in users.users_data.iter() {
         println!("Username: {}", user.username);
         println!("Password: {}", user.password);
         println!("UID: {}", user.uid);
-        println!("Personal Hash: {}", user.personal_hash);
+        println!("Personal hash: {}", user.personal_hash);
         println!("Balance: {}", user.balance);
-        println!("\n---\n");
+        println!("---------------------");
     }
 }
 
 fn _change_username(password: &str, uid: u128, old_username: &str, new_username: &str) -> ResponseStruct {
-    assert!(old_username != "");
-    assert!(new_username != "");
-    let mut users = _parse_users_json();
+    // change username of a user
+    let mut users = read_users();
     let mut user_exists = false;
-    for user in users.users_data.iter_mut() {
-        if user.username == old_username && user.password == password && user.uid == uid && user.personal_hash == compute_personal_hash(old_username, password, uid) {
+    let mut user_index = 0;
+    for (index, user) in users.users_data.iter().enumerate() {
+        if user.username == old_username {
             user_exists = true;
-            user.username = new_username.to_string();
-            user.personal_hash = compute_personal_hash(new_username, &user.password, user.uid);
+            user_index = index;
         }
     }
-    if user_exists {
-        let serialized_users = serde_json::to_string(&users).unwrap();
-        println!("{}", serialized_users);
-        // write to file
-        let mut file = File::create("users.db").expect("File not found");
-        file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
-        return ResponseStruct {
-            status: String::from("[SUCCESS]"),
-            message: String::from("Username changed successfully")
-        }
-    } else {
+    if !user_exists {
         return ResponseStruct {
             status: String::from("[ERROR]"),
             message: String::from("User does not exist")
         }
+    }
+    let user = users.users_data.get(user_index).unwrap();
+    if user.password != password || user.uid != uid {
+        return ResponseStruct {
+            status: String::from("[ERROR]"),
+            message: String::from("Wrong password or UID")
+        }
+    }
+    let personal_hash = compute_personal_hash(new_username, password, uid);
+    let new_user = User {
+        username: String::from(new_username),
+        password: String::from(password),
+        uid: uid,
+        personal_hash: personal_hash,
+        balance: user.balance
+    };
+    let users_json = serde_json::to_string(&new_user).unwrap();
+    let mut file = File::create(format!("db/{}.db", encrypt(KEY, new_username))).unwrap();
+    file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
+    std::fs::remove_file(format!("db/{}.db", encrypt(KEY, old_username))).unwrap();
+    return ResponseStruct {
+        status: String::from("[SUCCESS]"),
+        message: String::from("Username changed")
     }
 }
 
 fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
-    assert!(username != "");
-    assert!(password != "");
-    assert!(uid != 0);
-    let mut users = _parse_users_json();
+    // delete a user
+    let mut users = read_users();
     let mut user_exists = false;
-    for user in users.users_data.iter_mut() {
-        if user.username == username && user.password == password && user.uid == uid && user.personal_hash == compute_personal_hash(username, password, uid) {
+    let mut user_index = 0;
+    for (index, user) in users.users_data.iter().enumerate() {
+        if user.username == username {
             user_exists = true;
-            user.username = String::from("");
-            user.password = String::from("");
-            user.uid = 0;
-            user.personal_hash = String::from("");
-            user.balance = 0.0;
+            user_index = index;
         }
     }
-    if user_exists {
-        let serialized_users = serde_json::to_string(&users).unwrap();
-        println!("{}", serialized_users);
-        // write to file
-        let mut file = File::create("users.db").expect("File not found");
-        file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
-        return ResponseStruct {
-            status: String::from("[SUCCESS]"),
-            message: String::from("User deleted successfully")
-        }
-    } else {
+    if !user_exists {
         return ResponseStruct {
             status: String::from("[ERROR]"),
             message: String::from("User does not exist")
         }
     }
+    let user = users.users_data.get(user_index).unwrap();
+    if user.password != password || user.uid != uid {
+        return ResponseStruct {
+            status: String::from("[ERROR]"),
+            message: String::from("Wrong password or UID")
+        }
+    }
+    std::fs::remove_file(format!("db/{}.db", encrypt(KEY, username))).unwrap();
+    return ResponseStruct {
+        status: String::from("[SUCCESS]"),
+        message: String::from("User deleted")
+    }
 }
 
 fn clean_empty_accounts() {
-    let users = _parse_users_json();
-    let mut new_users = Users {
-        users_data: Vec::new()
-    };
-    for user in users.users_data {
-        if user.username != "" && user.password != "" && user.uid != 0 && user.personal_hash == compute_personal_hash(&user.username, &user.password, user.uid) {
-            new_users.users_data.push(user);
+    // delete all empty accounts
+    let mut users = read_users();
+    let mut user_exists = false;
+    let mut user_index = 0;
+    for (index, user) in users.users_data.iter().enumerate() {
+        if user.balance == 0.0 {
+            user_exists = true;
+            user_index = index;
         }
     }
-    let serialized_users = serde_json::to_string(&new_users).unwrap();
-    // write to file
-    let mut file = File::create("users.db").expect("File not found");
-    file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
+    if !user_exists {
+        return;
+    }
+    let user = users.users_data.get(user_index).unwrap();
+    std::fs::remove_file(format!("db/{}.db", encrypt(KEY, &user.username))).unwrap();
+    clean_empty_accounts();
 }
 
 fn handle_connection(mut stream: TcpStream) {
@@ -323,7 +389,6 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 fn main() {
-    // _print_database();
     if unsafe {IS_LIVE} {
         _print_database();
         println!("Starting server...");
