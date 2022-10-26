@@ -29,7 +29,6 @@ pub fn _check_transaction(username_sender: &str, password_sender: &str, uid_send
     if _check_transaction_hash(username_sender, password_sender, uid_sender) {
         // process transaction
         if (_get_user_balance(username_sender, password_sender, uid_sender) - amount) >= 0.0 {
-            println!("TELL ME SOMETHING");
             return true;
         } else {
             return false;
@@ -70,15 +69,15 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
         to_search.push(encrypt(KEY, username_sender));
         to_search.push(encrypt(KEY, username_t));
         // delete the file of the first user
-        std::fs::remove_file(format!("db/{}.db", to_search[0])).unwrap();
+        std::fs::remove_file(format!("data/{}.db", to_search[0])).unwrap();
         // delete the file of the second user
-        std::fs::remove_file(format!("db/{}.db", to_search[1])).unwrap();
+        std::fs::remove_file(format!("data/{}.db", to_search[1])).unwrap();
         // write the new data of the first user
-        let mut file = File::create(format!("db/{}.db", to_search[0])).unwrap();
+        let mut file = File::create(format!("data/{}.db", to_search[0])).unwrap();
         let first_user_data = encrypt(KEY, serde_json::to_string(&new_users.users_data[0]).unwrap().to_string().as_str());
         file.write_all(first_user_data.as_bytes()).unwrap();
         // write the new data of the second user
-        let mut file = File::create(format!("db/{}.db", to_search[1])).unwrap();
+        let mut file = File::create(format!("data/{}.db", to_search[1])).unwrap();
         let second_user_data = encrypt(KEY, serde_json::to_string(&new_users.users_data[1]).unwrap().to_string().as_str());
         file.write_all(second_user_data.as_bytes()).unwrap();
 

@@ -88,7 +88,7 @@ fn decrypt(key: &str, data: &str) -> String {
 fn read_users() -> Users {
     // read all .db files in the db folder and concat them in a vector
     let mut users: Vec<User> = Vec::new();
-    let files = std::fs::read_dir("db").unwrap();
+    let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
@@ -133,7 +133,7 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
         balance: 0.0
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("db/{}.db", encrypt(KEY, username))).unwrap();
+    let mut file = File::create(format!("data/{}.db", encrypt(KEY, username))).unwrap();
     file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
     return ResponseStruct {
         status: String::from("[SUCCESS]"),
@@ -159,7 +159,7 @@ fn add_admin() {
             balance: 50000.0
         };
         let users_json = serde_json::to_string(&new_user).unwrap();
-        let mut file = File::create(format!("db/{}.db", encrypt(KEY, "admin"))).unwrap();
+        let mut file = File::create(format!("data/{}.db", encrypt(KEY, "admin"))).unwrap();
         file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
     }
 }
@@ -167,7 +167,7 @@ fn add_admin() {
 
 fn _reset_database() {
     // delete all .db files in the db folder
-    let files = std::fs::read_dir("db").unwrap();
+    let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
@@ -180,7 +180,7 @@ fn _reset_database() {
 
 fn _encrypt_database() {
     // encrypt all .db files in the db folder
-    let files = std::fs::read_dir("db").unwrap();
+    let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
@@ -198,7 +198,7 @@ fn _encrypt_database() {
 
 fn  _decrypt_database() {
     // decrypt all .db files in the db folder
-    let files = std::fs::read_dir("db").unwrap();
+    let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
@@ -262,9 +262,9 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
         balance: user.balance
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("db/{}.db", encrypt(KEY, new_username))).unwrap();
+    let mut file = File::create(format!("data/{}.db", encrypt(KEY, new_username))).unwrap();
     file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
-    std::fs::remove_file(format!("db/{}.db", encrypt(KEY, old_username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt(KEY, old_username))).unwrap();
     return ResponseStruct {
         status: String::from("[SUCCESS]"),
         message: String::from("Username changed")
@@ -295,7 +295,7 @@ fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
             message: String::from("Wrong password or UID")
         }
     }
-    std::fs::remove_file(format!("db/{}.db", encrypt(KEY, username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt(KEY, username))).unwrap();
     return ResponseStruct {
         status: String::from("[SUCCESS]"),
         message: String::from("User deleted")
@@ -317,7 +317,7 @@ fn clean_empty_accounts() {
         return;
     }
     let user = users.users_data.get(user_index).unwrap();
-    std::fs::remove_file(format!("db/{}.db", encrypt(KEY, &user.username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt(KEY, &user.username))).unwrap();
     clean_empty_accounts();
 }
 
