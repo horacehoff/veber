@@ -67,7 +67,7 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
                 new_users.users_data.push(user);
             }
         }
-        let mut file = File::create("users.ums").unwrap();
+        let mut file = File::create("users.db").unwrap();
         file.write_all(encrypt(KEY, &serde_json::to_string(&new_users).unwrap()).as_bytes()).unwrap();
         return ResponseStruct {
             status: String::from("[SUCCESS]"),

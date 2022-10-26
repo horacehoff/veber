@@ -7,7 +7,7 @@ use transactions::_process_transaction;
 use std::net::TcpListener;
 mod transactions;
 
-static mut IS_LIVE: bool = false;
+static mut IS_LIVE: bool = true;
 static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -86,8 +86,8 @@ fn decrypt(key: &str, data: &str) -> String {
 }
 
 fn read_users() -> String {
-    // read users.ums file
-    let mut file = File::open("users.ums").expect("File not found");
+    // read users.db file
+    let mut file = File::open("users.db").expect("File not found");
     // read file contents
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Something went wrong reading the file");
@@ -128,7 +128,7 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     let serialized_users = serde_json::to_string(&users).unwrap();
     println!("{}", serialized_users);
     // write to file
-    let mut file = File::create("users.ums").expect("File not found");
+    let mut file = File::create("users.db").expect("File not found");
     file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
     return ResponseStruct {
         status: String::from("[SUCCESS]"),
@@ -139,27 +139,27 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
 
 
 fn _reset_database() {
-    let mut file = File::create("users.ums").expect("File not found");
+    let mut file = File::create("users.db").expect("File not found");
     file.write_all(encrypt(KEY,"{\"users_data\":[]}").as_bytes()).expect("Something went wrong writing the file");
 }
 
 fn _encrypt_database() {
-    let mut file = File::open("users.ums").expect("File not found");
+    let mut file = File::open("users.db").expect("File not found");
     // read file contents
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Something went wrong reading the file");
     // print file contents
-    let mut file = File::create("users.ums").expect("File not found");
+    let mut file = File::create("users.db").expect("File not found");
     file.write_all(encrypt(KEY,&contents).as_bytes()).expect("Something went wrong writing the file");
 }
 
 fn  _decrypt_database() {
-    let mut file = File::open("users.ums").expect("File not found");
+    let mut file = File::open("users.db").expect("File not found");
     // read file contents
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Something went wrong reading the file");
     // print file contents
-    let mut file = File::create("users.ums").expect("File not found");
+    let mut file = File::create("users.db").expect("File not found");
     file.write_all(decrypt(KEY,&contents).as_bytes()).expect("Something went wrong writing the file");
 }
 
@@ -191,7 +191,7 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
         let serialized_users = serde_json::to_string(&users).unwrap();
         println!("{}", serialized_users);
         // write to file
-        let mut file = File::create("users.ums").expect("File not found");
+        let mut file = File::create("users.db").expect("File not found");
         file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
         return ResponseStruct {
             status: String::from("[SUCCESS]"),
@@ -225,7 +225,7 @@ fn delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
         let serialized_users = serde_json::to_string(&users).unwrap();
         println!("{}", serialized_users);
         // write to file
-        let mut file = File::create("users.ums").expect("File not found");
+        let mut file = File::create("users.db").expect("File not found");
         file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
         return ResponseStruct {
             status: String::from("[SUCCESS]"),
@@ -251,7 +251,7 @@ fn clean_empty_accounts() {
     }
     let serialized_users = serde_json::to_string(&new_users).unwrap();
     // write to file
-    let mut file = File::create("users.ums").expect("File not found");
+    let mut file = File::create("users.db").expect("File not found");
     file.write_all(encrypt(KEY,&serialized_users).as_bytes()).expect("Something went wrong writing the file");
 }
 
@@ -325,6 +325,7 @@ fn handle_connection(mut stream: TcpStream) {
 fn main() {
     // _print_database();
     if unsafe {IS_LIVE} {
+        _print_database();
         println!("Starting server...");
         let listener = TcpListener::bind("127.0.0.1:7979").unwrap();
         println!("Server started on port 7979");
