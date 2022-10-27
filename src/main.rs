@@ -512,8 +512,8 @@ fn main() {
     if unsafe {IS_LIVE} {
         _print_database();
         println!("Starting server...");
-        let listener = TcpListener::bind("127.0.0.1:7979").unwrap();
-        println!("Server started on port 7979");
+        let listener = TcpListener::bind("127.0.0.1:443").unwrap();
+        println!("Server started on port 443");
         let thread_pool = ThreadPool::new(10);
         for stream in listener.incoming() {
             catch! {
