@@ -282,7 +282,7 @@ fn _delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
         }
     }
     let user = users.users_data.get(user_index).unwrap();
-    if user.password != password || user.uid != uid {
+    if user.password != password || user.uid != uid || compute_personal_hash(username, password, uid) != user.personal_hash {
         return ResponseStruct {
             status: String::from("ERROR"),
             message: String::from("Wrong password or UID")
@@ -312,6 +312,79 @@ fn _clean_empty_accounts() {
     let user = users.users_data.get(user_index).unwrap();
     std::fs::remove_file(format!("data/{}.db", encrypt(&user.username))).unwrap();
     _clean_empty_accounts();
+}
+
+
+fn _change_password(username: &str, old_password: &str, uid: u128, new_password: &str) -> ResponseStruct {
+    // change password of a user
+    let users = read_users();
+    let mut user_exists = false;
+    let mut user_index = 0;
+    for (index, user) in users.users_data.iter().enumerate() {
+        if user.username == username {
+            user_exists = true;
+            user_index = index;
+        }
+    }
+    if !user_exists {
+        return ResponseStruct {
+            status: String::from("ERROR"),
+            message: String::from("User does not exist")
+        }
+    }
+    let user = users.users_data.get(user_index).unwrap();
+    if user.password != old_password || user.uid != uid {
+        return ResponseStruct {
+            status: String::from("ERROR"),
+            message: String::from("Wrong password or UID")
+        }
+    }
+    let personal_hash = compute_personal_hash(username, new_password, uid);
+    let new_user = User {
+        username: String::from(username),
+        password: String::from(new_password),
+        uid: uid,
+        personal_hash: personal_hash,
+        balance: user.balance
+    };
+    let users_json = serde_json::to_string(&new_user).unwrap();
+    let mut file = File::create(format!("data/{}.db", encrypt(username))).unwrap();
+    file.write_all(encrypt(&users_json).as_bytes()).unwrap();
+    return ResponseStruct {
+        status: String::from("SUCCESS"),
+        message: String::from("Password changed")
+    }
+}
+
+fn _get_balance(username: &str, password: &str, uid: u128) -> ResponseStruct {
+    // get balance of a user
+    let users = read_users();
+    let mut user_exists = false;
+    let mut user_index = 0;
+    for (index, user) in users.users_data.iter().enumerate() {
+        println!("{} {}", user.username, username);
+        if user.username == username {
+            user_exists = true;
+            user_index = index;
+        }
+    }
+    if !user_exists {
+        return ResponseStruct {
+            status: String::from("ERROR"),
+            message: String::from("User does not exist")
+        }
+    }
+    let user = users.users_data.get(user_index).unwrap();
+    if user.password != password || user.uid != uid {
+        return ResponseStruct {
+            status: String::from("ERROR"),
+            message: String::from("Wrong password or UID")
+        }
+    }
+    return ResponseStruct {
+        status: String::from("SUCCESS"),
+        message: format!("Balance: {}", user.balance)
+    }
 }
 
 fn handle_connection(mut stream: TcpStream) {
@@ -378,6 +451,60 @@ fn handle_connection(mut stream: TcpStream) {
             }).unwrap();
         });
         return;
+    } else if &args[1][..17] == "/change_password/" {
+        {
+            println!("Request: {:?}", args);
+            let args = args[1][17..].split("?").collect::<Vec<&str>>();
+            println!("Args: {:?}", args);
+            let username = args[0];
+            let password = args[1];
+            let uid = args[2].parse::<u128>().unwrap();
+            let new_password = args[3];
+            serde_json::to_writer(&stream, &_change_password(username, password, uid, new_password))
+        }
+        .unwrap_or_else(|e| {
+            println!("ERROR{}", e);
+            serde_json::to_writer(&stream, &ResponseStruct {
+                status: String::from("ERROR"),
+                message: String::from("Error changing password -> ") + e.to_string().as_str()
+            }).unwrap();
+        });
+        return;
+    } else if &args[1][..13] == "/delete_user/" {
+        {
+            println!("Request: {:?}", args);
+            let args = args[1][13..].split("?").collect::<Vec<&str>>();
+            println!("Args: {:?}", args);
+            let username = args[0];
+            let password = args[1];
+            let uid = args[2].parse::<u128>().unwrap();
+            serde_json::to_writer(&stream, &_delete_user(username, password, uid))
+        }
+        .unwrap_or_else(|e| {
+            println!("ERROR{}", e);
+            serde_json::to_writer(&stream, &ResponseStruct {
+                status: String::from("ERROR"),
+                message: String::from("Error deleting user -> ") + e.to_string().as_str()
+            }).unwrap();
+        });
+        return;
+    } else if &args[1][..13] == "/get_balance/" {
+        {
+            println!("Request: {:?}", args);
+            let args = args[1][13..].split("?").collect::<Vec<&str>>();
+            println!("Args: {:?}", args);
+            let username = args[0];
+            let password = args[1];
+            let uid = args[2].parse::<u128>().unwrap();
+            serde_json::to_writer(&stream, &_get_balance(username, password, uid))
+        }
+        .unwrap_or_else(|e| {
+            println!("ERROR{}", e);
+            serde_json::to_writer(&stream, &ResponseStruct {
+                status: String::from("ERROR"),
+                message: String::from("Error getting balance -> ") + e.to_string().as_str()
+            }).unwrap();
+        });
     }
 }
 
@@ -391,10 +518,12 @@ fn main() {
         for stream in listener.incoming() {
             catch! {
                 try {
-                    let stream = stream.unwrap();
-                    thread_pool.execute(|| {
-                        handle_connection(stream);
-                    });
+                    if unsafe{IS_LIVE} {
+                        let stream = stream.unwrap();
+                        thread_pool.execute(|| {
+                            handle_connection(stream);
+                        });
+                    }
                 } 
                 catch _error {
                     println!("[ERROR.THREADPOOL_CONNECTION_HANDLING]");

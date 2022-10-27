@@ -43,9 +43,16 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
     let mut new_users = Users {
         users_data: Vec::new()
     };
-    if _check_transaction(username_sender, password_sender, uid_sender, amount) && unsafe{IS_LIVE} && username_sender != "" && password_sender != "" && uid_sender != 0 && username_t != "" && amount != 0.0 && _check_transaction_hash(username_sender, password_sender, uid_sender) {
+    let mut is_checked = false;
+    // additional security checks
+    for user in read_users().users_data {
+        if user.username == username_sender && user.password == password_sender && user.uid == uid_sender && compute_personal_hash(username_sender, password_sender, uid_sender) == user.personal_hash {
+            is_checked = true;
+        }
+    }
+    if is_checked && _check_transaction(username_sender, password_sender, uid_sender, amount) && unsafe{IS_LIVE} && username_sender != "" && password_sender != "" && uid_sender != 0 && username_t != "" && amount != 0.0 && _check_transaction_hash(username_sender, password_sender, uid_sender) {
         for user in users.users_data {
-            if user.username == username_sender && user.password == password_sender && user.uid == uid_sender {
+            if user.username == username_sender && user.password == password_sender && user.uid == uid_sender && user.personal_hash == compute_personal_hash(username_sender, password_sender, uid_sender) {
                 let new_user = User {
                     username: user.username,
                     password: user.password,
