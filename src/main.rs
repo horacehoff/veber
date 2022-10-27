@@ -56,32 +56,24 @@ fn compute_personal_hash(username: &str, password: &str, uid: u128) -> String {
     return hash_str;
 }
 
-fn encrypt_slayer(key: &str, data: &str) -> String {
-    let mc = new_magic_crypt!(key, 256);
-    let encrypted = mc.encrypt_str_to_base64(data);
+fn encrypt(data: &str) -> String {
+    let mcrypt = new_magic_crypt!(KEY, 256);
+    let mut encrypted = mcrypt.encrypt_str_to_base64(data);
+    encrypted = mcrypt.encrypt_str_to_base64(encrypted.as_str());
     return encrypted;
 }
 
-fn decrypt_slayer(key: &str, data: &str) -> String {
-    let mc = new_magic_crypt!(key, 256);
-    let decrypted = mc.decrypt_base64_to_string(data);
-    match decrypted {
-        Ok(decrypted) => return decrypted,
-        Err(_) => return String::from(""),
-    }
-}
-
-fn encrypt(key: &str, data: &str) -> String {
-    let mcrypt = new_magic_crypt!(key, 256);
-    let encrypted = mcrypt.encrypt_str_to_base64(data);
-    return encrypt_slayer(KEY, encrypted.as_str());
-}
-
-fn decrypt(key: &str, data: &str) -> String {
-    let mcrypt = new_magic_crypt!(key, 256);
+fn decrypt(data: &str) -> String {
+    let mcrypt = new_magic_crypt!(KEY, 256);
     let decrypted = mcrypt.decrypt_base64_to_string(data);
     match decrypted {
-        Ok(decrypted) => return decrypt_slayer(KEY, decrypted.as_str()),
+        Ok(decrypted) => {
+            let decrypted_layer_two = mcrypt.decrypt_base64_to_string(decrypted.as_str());
+            match decrypted_layer_two {
+                Ok(decrypted_layer_two) => return decrypted_layer_two,
+                Err(_) => return String::from(""),
+            }
+        },
         Err(_) => return String::from(""),
     }
 }
@@ -98,7 +90,7 @@ fn read_users() -> Users {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            contents = decrypt(KEY, contents.as_str());
+            contents = decrypt(contents.as_str());
             let user: User = serde_json::from_str(&contents).unwrap();
             users.push(user);
         }
@@ -134,8 +126,8 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
         balance: 0.0
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("data/{}.db", encrypt(KEY, username))).unwrap();
-    file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
+    let mut file = File::create(format!("data/{}.db", encrypt(username))).unwrap();
+    file.write_all(encrypt(&users_json).as_bytes()).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("User created")
@@ -160,8 +152,8 @@ fn add_admin() {
             balance: 50000.0
         };
         let users_json = serde_json::to_string(&new_user).unwrap();
-        let mut file = File::create(format!("data/{}.db", encrypt(KEY, "admin"))).unwrap();
-        file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
+        let mut file = File::create(format!("data/{}.db", encrypt("admin"))).unwrap();
+        file.write_all(encrypt(&users_json).as_bytes()).unwrap();
     }
 }
 
@@ -190,7 +182,7 @@ fn _encrypt_database() {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            let encrypted = encrypt(KEY, &contents);
+            let encrypted = encrypt(&contents);
             let mut file = File::create(path_str).unwrap();
             file.write_all(encrypted.as_bytes()).unwrap();
         }
@@ -208,7 +200,7 @@ fn  _decrypt_database() {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            let decrypted = decrypt(KEY, &contents);
+            let decrypted = decrypt(&contents);
             let mut file = File::create(path_str).unwrap();
             file.write_all(decrypted.as_bytes()).unwrap();
         }
@@ -263,9 +255,9 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
         balance: user.balance
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("data/{}.db", encrypt(KEY, new_username))).unwrap();
-    file.write_all(encrypt(KEY, &users_json).as_bytes()).unwrap();
-    std::fs::remove_file(format!("data/{}.db", encrypt(KEY, old_username))).unwrap();
+    let mut file = File::create(format!("data/{}.db", encrypt(new_username))).unwrap();
+    file.write_all(encrypt(&users_json).as_bytes()).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt(old_username))).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("Username changed")
@@ -296,7 +288,7 @@ fn _delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
             message: String::from("Wrong password or UID")
         }
     }
-    std::fs::remove_file(format!("data/{}.db", encrypt(KEY, username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt(username))).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("User deleted")
@@ -318,7 +310,7 @@ fn _clean_empty_accounts() {
         return;
     }
     let user = users.users_data.get(user_index).unwrap();
-    std::fs::remove_file(format!("data/{}.db", encrypt(KEY, &user.username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt(&user.username))).unwrap();
     _clean_empty_accounts();
 }
 
