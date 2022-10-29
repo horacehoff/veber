@@ -62,9 +62,11 @@ pub fn decrypt(encrypted: &str) -> String {
     let mut j = 0;
     // revert what was done in the encrypt function with the index of NUMBERS and LETTERS
     for i in split_vec {
+        if i != "" {
         let k = i.parse::<u128>().unwrap();
         unsafe{_final_s = concat(_final_s.to_string(), LETTERS[NUMBERS.iter().position(|&r| r == k as i32).unwrap()-27-j].to_string())}
         j += 1;
+    }
     }
 
     return _final_s;

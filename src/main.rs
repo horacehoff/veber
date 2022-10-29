@@ -8,10 +8,11 @@ use std::net::TcpListener;
 mod transactions;
 mod lib { pub mod hashing; }
 use try_catch::catch;
+use std::str;
 
 use crate::lib::hashing;
 
-static mut IS_LIVE: bool = false;
+static mut IS_LIVE: bool = true;
 static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -60,21 +61,21 @@ fn compute_personal_hash(username: &str, password: &str, uid: u128) -> String {
 }
 
 
-// fn encrypt(data: &str) -> String {
+// fn base64_url::encode(data: &str) -> String {
 //     let mcrypt = new_magic_crypt!(KEY, 256);
-//     let mut encrypted = mcrypt.encrypt_str_to_base64(data);
-//     encrypted = mcrypt.encrypt_str_to_base64(encrypted.as_str());
-//     return encrypted;
+//     let mut base64_url::encodeed = mcrypt.base64_url::encode_str_to_base64(data);
+//     base64_url::encodeed = mcrypt.base64_url::encode_str_to_base64(base64_url::encodeed.as_str());
+//     return base64_url::encodeed;
 // }
 
-// fn decrypt(data: &str) -> String {
+// fn base64_url::decode(data: &str) -> String {
 //     let mcrypt = new_magic_crypt!(KEY, 256);
-//     let decrypted = mcrypt.decrypt_base64_to_string(data);
-//     match decrypted {
-//         Ok(decrypted) => {
-//             let decrypted_layer_two = mcrypt.decrypt_base64_to_string(decrypted.as_str());
-//             match decrypted_layer_two {
-//                 Ok(decrypted_layer_two) => return decrypted_layer_two,
+//     let base64_url::decodeed = mcrypt.base64_url::decode_base64_to_string(data);
+//     match base64_url::decodeed {
+//         Ok(base64_url::decodeed) => {
+//             let base64_url::decodeed_layer_two = mcrypt.base64_url::decode_base64_to_string(base64_url::decodeed.as_str());
+//             match base64_url::decodeed_layer_two {
+//                 Ok(base64_url::decodeed_layer_two) => return base64_url::decodeed_layer_two,
 //                 Err(_) => return String::from(""),
 //             }
 //         },
@@ -94,7 +95,7 @@ fn read_users() -> Users {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            contents = decrypt(contents.as_str());
+            contents = str::from_utf8(&base64_url::decode(contents.as_str()).unwrap()).unwrap().to_string();
             let user: User = serde_json::from_str(&contents).unwrap();
             users.push(user);
         }
@@ -130,9 +131,9 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
         balance: 0.0
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    println!("{}", format!("data/{}.db", encrypt(username)));
-    let mut file = File::create(format!("data/{}.db", encrypt(username))).unwrap();
-    file.write_all(encrypt(&users_json).as_bytes()).unwrap();
+    println!("{}", format!("data/{}.db", base64_url::encode(username)));
+    let mut file = File::create(format!("data/{}.db", base64_url::encode(username))).unwrap();
+    file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("User created")
@@ -157,8 +158,8 @@ fn add_admin() {
             balance: 50000.0
         };
         let users_json = serde_json::to_string(&new_user).unwrap();
-        let mut file = File::create(format!("data/{}.db", encrypt("admin"))).unwrap();
-        file.write_all(encrypt(&users_json).as_bytes()).unwrap();
+        let mut file = File::create(format!("data/{}.db", base64_url::encode("admin"))).unwrap();
+        file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
     }
 }
 
@@ -177,7 +178,7 @@ fn _reset_database() {
 }
 
 fn _encrypt_database() {
-    // encrypt all .db files in the db folder
+    // base64_url::encode all .db files in the db folder
     let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
@@ -187,7 +188,7 @@ fn _encrypt_database() {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            let encrypted = encrypt(&contents);
+            let encrypted = base64_url::encode(&contents);
             let mut file = File::create(path_str).unwrap();
             file.write_all(encrypted.as_bytes()).unwrap();
         }
@@ -195,7 +196,7 @@ fn _encrypt_database() {
 }
 
 fn  _decrypt_database() {
-    // decrypt all .db files in the db folder
+    // base64_url::decode all .db files in the db folder
     let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
@@ -205,7 +206,7 @@ fn  _decrypt_database() {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            let decrypted = decrypt(&contents);
+            let decrypted = str::from_utf8(&base64_url::decode(&contents).unwrap()).unwrap().to_string();
             let mut file = File::create(path_str).unwrap();
             file.write_all(decrypted.as_bytes()).unwrap();
         }
@@ -260,9 +261,9 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
         balance: user.balance
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("data/{}.db", encrypt(new_username))).unwrap();
-    file.write_all(encrypt(&users_json).as_bytes()).unwrap();
-    std::fs::remove_file(format!("data/{}.db", encrypt(old_username))).unwrap();
+    let mut file = File::create(format!("data/{}.db", base64_url::encode(new_username))).unwrap();
+    file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
+    std::fs::remove_file(format!("data/{}.db", base64_url::encode(old_username))).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("Username changed")
@@ -293,7 +294,7 @@ fn _delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
             message: String::from("Wrong password or UID")
         }
     }
-    std::fs::remove_file(format!("data/{}.db", encrypt(username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", base64_url::encode(username))).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("User deleted")
@@ -315,7 +316,7 @@ fn _clean_empty_accounts() {
         return;
     }
     let user = users.users_data.get(user_index).unwrap();
-    std::fs::remove_file(format!("data/{}.db", encrypt(&user.username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", base64_url::encode(&user.username))).unwrap();
     _clean_empty_accounts();
 }
 
@@ -353,8 +354,8 @@ fn _change_password(username: &str, old_password: &str, uid: u128, new_password:
         balance: user.balance
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("data/{}.db", encrypt(username))).unwrap();
-    file.write_all(encrypt(&users_json).as_bytes()).unwrap();
+    let mut file = File::create(format!("data/{}.db", base64_url::encode(username))).unwrap();
+    file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("Password changed")
@@ -514,7 +515,7 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 fn main() {
-    println!("{}", hashing::decrypt(hashing::encrypt("Dude that's so cool").as_str()));
+    // println!("{}", hashing::base64_url::decode(hashing::base64_url::encode("Dude that's so cool").as_str()));
     if unsafe {IS_LIVE} {
         _print_database();
         println!("Starting server...");
