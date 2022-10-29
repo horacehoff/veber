@@ -6,9 +6,12 @@ use threadpool::ThreadPool;
 use transactions::_process_transaction;
 use std::net::TcpListener;
 mod transactions;
+mod lib { pub mod hashing; }
 use try_catch::catch;
 
-static mut IS_LIVE: bool = true;
+use crate::lib::hashing;
+
+static mut IS_LIVE: bool = false;
 static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -56,27 +59,28 @@ fn compute_personal_hash(username: &str, password: &str, uid: u128) -> String {
     return hash_str;
 }
 
-fn encrypt(data: &str) -> String {
-    let mcrypt = new_magic_crypt!(KEY, 256);
-    let mut encrypted = mcrypt.encrypt_str_to_base64(data);
-    encrypted = mcrypt.encrypt_str_to_base64(encrypted.as_str());
-    return encrypted;
-}
 
-fn decrypt(data: &str) -> String {
-    let mcrypt = new_magic_crypt!(KEY, 256);
-    let decrypted = mcrypt.decrypt_base64_to_string(data);
-    match decrypted {
-        Ok(decrypted) => {
-            let decrypted_layer_two = mcrypt.decrypt_base64_to_string(decrypted.as_str());
-            match decrypted_layer_two {
-                Ok(decrypted_layer_two) => return decrypted_layer_two,
-                Err(_) => return String::from(""),
-            }
-        },
-        Err(_) => return String::from(""),
-    }
-}
+// fn encrypt(data: &str) -> String {
+//     let mcrypt = new_magic_crypt!(KEY, 256);
+//     let mut encrypted = mcrypt.encrypt_str_to_base64(data);
+//     encrypted = mcrypt.encrypt_str_to_base64(encrypted.as_str());
+//     return encrypted;
+// }
+
+// fn decrypt(data: &str) -> String {
+//     let mcrypt = new_magic_crypt!(KEY, 256);
+//     let decrypted = mcrypt.decrypt_base64_to_string(data);
+//     match decrypted {
+//         Ok(decrypted) => {
+//             let decrypted_layer_two = mcrypt.decrypt_base64_to_string(decrypted.as_str());
+//             match decrypted_layer_two {
+//                 Ok(decrypted_layer_two) => return decrypted_layer_two,
+//                 Err(_) => return String::from(""),
+//             }
+//         },
+//         Err(_) => return String::from(""),
+//     }
+// }
 
 fn read_users() -> Users {
     // read all .db files in the db folder and concat them in a vector
@@ -126,6 +130,7 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
         balance: 0.0
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
+    println!("{}", format!("data/{}.db", encrypt(username)));
     let mut file = File::create(format!("data/{}.db", encrypt(username))).unwrap();
     file.write_all(encrypt(&users_json).as_bytes()).unwrap();
     return ResponseStruct {
@@ -143,11 +148,11 @@ fn add_admin() {
         }
     }
     if !admin_exists {
-        let personal_hash = compute_personal_hash("admin", "admin", 11111111111111111111111111111111);
+        let personal_hash = compute_personal_hash("admin", "admin", 011);
         let new_user = User {
             username: String::from("admin"),
             password: String::from("admin"),
-            uid: 11111111111111111111111111111111,
+            uid: 011,
             personal_hash: personal_hash,
             balance: 50000.0
         };
@@ -509,6 +514,7 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 fn main() {
+    println!("{}", hashing::decrypt(hashing::encrypt("Dude that's so cool").as_str()));
     if unsafe {IS_LIVE} {
         _print_database();
         println!("Starting server...");
