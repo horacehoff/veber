@@ -23,7 +23,7 @@ use std::str;
 
 // GLOBALS
 static mut IS_LIVE: bool = true;
-static _KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
+static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {

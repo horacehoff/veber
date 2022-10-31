@@ -1,11 +1,11 @@
 use std::str::from_utf8;
-use crate::_KEY;
+use crate::KEY;
 use simplecrypt::{encrypt, decrypt};
 
 
 pub fn encrypt_data(raw: &str) -> String {
     let mut numbers: Vec<i32> = Vec::new();
-    for byte in encrypt(base64_url::encode(raw).as_bytes(), base64_url::encode(_KEY).as_bytes()) {
+    for byte in encrypt(base64_url::encode(raw).as_bytes(), base64_url::encode(KEY).as_bytes()) {
         numbers.push(byte as i32);
     }
     let mut result = String::new();
@@ -29,5 +29,5 @@ pub fn decrypt_data(raw: &str) -> String {
     for number in numbers {
         bytes.push(number as u8);
     }
-    return from_utf8(&base64_url::decode(&from_utf8(&decrypt(&bytes, base64_url::encode(_KEY).as_bytes()).unwrap()).unwrap()).unwrap()).unwrap().to_owned();
+    return from_utf8(&base64_url::decode(&from_utf8(&decrypt(&bytes, base64_url::encode(KEY).as_bytes()).unwrap()).unwrap()).unwrap()).unwrap().to_owned();
 }
