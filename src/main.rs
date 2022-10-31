@@ -24,8 +24,25 @@ use std::str;
 // GLOBALS
 static mut IS_LIVE: bool = true;
 static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
-static mut WAITING_LIST: Vec<TcpStream> = Vec::new();
 static mut AVAILABLE_THREADS: u8 = 9;
+static mut WAITING_LIST: Vec<TcpStream> = Vec::new();
+static mut THREADS: Threads = Threads {
+    threads: Vec::new()
+};
+
+
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Thread {
+    available_functions: u16
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Threads {
+    threads: Vec<Thread>
+}
 
 
 /// Properties:
@@ -43,16 +60,26 @@ pub struct User {
     balance: f64
 }
 
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Users {
     users_data: Vec<User>
 }
 
-#[derive(Serialize, Deserialize)]
+
+/// 
+/// 
+/// Properties:
+/// 
+/// * `status`: This is the status of the response. It can be either success or error.
+/// * `message`: The message to be displayed to the user.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ResponseStruct {
     status: String,
     message: String
 }
+
+
 
 fn compute_personal_hash(username: &str, password: &str, uid: u128) -> String {
     // create the 'hashers', and hash the data
@@ -624,6 +651,7 @@ fn handle_connection(mut stream: TcpStream) {
             let username = args[0];
             let password = args[1];
             let uid = args[2].parse::<u128>().unwrap();
+            println!("{:?}", &_get_balance(username, password, uid));
             serde_json::to_writer(&stream, &_get_balance(username, password, uid))
         }
         .unwrap_or_else(|e| {
@@ -638,6 +666,42 @@ fn handle_connection(mut stream: TcpStream) {
 
 
 
+fn populate_threads() {
+    unsafe {
+        let mut threads: Vec<Thread> = Vec::new();
+        for _ in 0..AVAILABLE_THREADS {
+            threads.push(Thread {
+                available_functions: 10
+            });
+        }
+        THREADS.threads = threads;
+}}
+
+
+fn handle_waiting_list(thread_pool: ThreadPool) {
+    unsafe {
+        if WAITING_LIST.len() > 0 {
+            for i in 0..THREADS.threads.len() {
+                if THREADS.threads[i].available_functions > 0 {
+                    THREADS.threads[i].available_functions -= 1;
+                    // let mut thread = thread::spawn(move || {
+                    //     let mut stream = WAITING_LIST[0].stream;
+                    //     let mut args = WAITING_LIST[0].args;
+                    //     WAITING_LIST.remove(0);
+                    //     handle_request(&mut stream, &mut args);
+                    //     THREADS.threads[i].available_functions += 1;
+                    // });
+                    // thread.join().unwrap();
+                    thread_pool.execute(move || {
+                        handle_connection(WAITING_LIST[0].try_clone().unwrap());
+                        WAITING_LIST.remove(0);
+                        THREADS.threads[i].available_functions += 1;
+                    });
+                }
+            }
+        }
+    }
+}
 
 /// It starts a server on port 443, and then for each connection it receives, it spawns a new thread to
 /// handle the connection.
@@ -648,8 +712,10 @@ fn main() {
         let listener = TcpListener::bind("127.0.0.1:443").unwrap();
         println!("Server started on port 443");
         let thread_pool = ThreadPool::new(10);
+        populate_threads();
         for stream in listener.incoming() {
-            catch! {
+            if (unsafe {WAITING_LIST.len()} as u16) < (unsafe {AVAILABLE_THREADS as u16} * 10) {
+                catch! {
                 try {
                     if unsafe{IS_LIVE} {
                         let stream = stream.unwrap();
@@ -662,6 +728,37 @@ fn main() {
                     println!("[ERROR.THREADPOOL_CONNECTION_HANDLING]");
                 }
             }
+            } else {
+                let stream = stream.unwrap();
+            // inform the user that the server is busy
+            if true {
+                let mut stream = stream;
+                let response = ResponseStruct {
+                    status: String::from("..."),
+                    message: String::from("Your request is being processed, please wait...")
+                };
+                serde_json::to_writer(&mut stream, &response).unwrap();
+                continue;
+            }
+            unsafe {
+                WAITING_LIST.push(stream.try_clone().unwrap());
+            }
+            handle_waiting_list(thread_pool.clone());
+            }
+        
+            // catch! {
+            //     try {
+            //         if unsafe{IS_LIVE} {
+            //             let stream = stream.unwrap();
+            //             thread_pool.execute(|| {
+            //                 handle_connection(stream);
+            //             });
+            //         }
+            //     } 
+            //     catch _error {
+            //         println!("[ERROR.THREADPOOL_CONNECTION_HANDLING]");
+            //     }
+            // }
         }
     }
 }
