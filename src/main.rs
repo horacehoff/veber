@@ -24,7 +24,16 @@ use std::str;
 // GLOBALS
 static mut IS_LIVE: bool = true;
 static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
+static mut WAITING_LIST: Vec<TcpStream> = Vec::new();
+static mut AVAILABLE_THREADS: u8 = 9;
 
+
+/// Properties:
+/// * `username`: The username of the user
+/// * `password`: The password of the user.
+/// * `uid`: A unique identifier for the user.
+/// * `personal_hash`: A hash of the user's username, password, and uid.
+/// * `balance`: The amount of money the user has
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     username: String,
@@ -46,6 +55,7 @@ pub struct ResponseStruct {
 }
 
 fn compute_personal_hash(username: &str, password: &str, uid: u128) -> String {
+    // create the 'hashers', and hash the data
     let mut layer_one = Sha512_256::new();
     let mut layer_two = Sha224::new();
     let mut layer_three = Sha512_224::new();
@@ -96,12 +106,15 @@ fn compute_personal_hash(username: &str, password: &str, uid: u128) -> String {
 fn read_users() -> Users {
     // read all .db files in the db folder and concat them in a vector
     let mut users: Vec<User> = Vec::new();
+    // read the db folder and get a list of all the files
     let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
         let path = file.path();
         let path_str = path.to_str().unwrap();
+        // ignore non .db files
         if path_str.ends_with(".db") {
+            // read the file, and deserialize/decrypt it
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
@@ -117,10 +130,24 @@ fn read_users() -> Users {
     return users_json
 }
 
+
+
+/// It creates a new user file in the db folder
+/// 
+/// Arguments:
+/// 
+/// * `username`: &str, password: &str, uid: u128
+/// * `password`: &str,
+/// * `uid`: u128
+/// 
+/// Returns:
+/// 
+/// A ResponseStruct
 fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     // create new user file in the db folder
     let users = read_users();
     let mut user_exists = false;
+    // check if the user already exists
     for user in users.users_data.iter() {
         if user.username == username {
             user_exists = true;
@@ -132,6 +159,7 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
             message: String::from("User already exists")
         }
     }
+    // create the user struct and serialize it, then encrypt it and write it to the file
     let personal_hash = compute_personal_hash(username, password, uid);
     let new_user = User {
         username: String::from(username),
@@ -150,7 +178,10 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     }
 }
 
+
+
 fn _add_admin() {
+    // check if the admin exists
     let users = read_users();
     let mut admin_exists = false;
     for user in users.users_data.iter() {
@@ -158,6 +189,7 @@ fn _add_admin() {
             admin_exists = true;
         }
     }
+    // if it doesn't exist, create it, seralize it, encrypt it, and write it to the file
     if !admin_exists {
         let personal_hash = compute_personal_hash("admin", "admin", 011);
         let new_user = User {
@@ -175,8 +207,9 @@ fn _add_admin() {
 }
 
 
+
 fn _reset_database() {
-    // delete all .db files in the db folder
+    // delete all .db files in the data folder
     let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
@@ -187,6 +220,8 @@ fn _reset_database() {
         }
     }
 }
+
+
 
 fn _encrypt_database() {
     // encrypt_data all .db files in the db folder
@@ -206,6 +241,8 @@ fn _encrypt_database() {
     }
 }
 
+
+
 fn  _decrypt_database() {
     // decrypt_data all .db files in the db folder
     let files = std::fs::read_dir("data").unwrap();
@@ -224,6 +261,8 @@ fn  _decrypt_database() {
     }
 }
 
+
+
 fn _print_database() {
     // print all .db files in the db folder
     let users = read_users();
@@ -239,6 +278,21 @@ fn _print_database() {
     }
 }
 
+
+
+/// It takes a password, a user ID, an old username, and a new username, and if the password and user ID
+/// are correct, it changes the username
+/// 
+/// Arguments:
+/// 
+/// * `password`: &str, uid: u128, old_username: &str, new_username: &str
+/// * `uid`: The user's unique ID
+/// * `old_username`: The username of the user who wants to change their username
+/// * `new_username`: The new username
+/// 
+/// Returns:
+/// 
+/// A ResponseStruct
 fn _change_username(password: &str, uid: u128, old_username: &str, new_username: &str) -> ResponseStruct {
     // change username of a user
     let users = read_users();
@@ -281,6 +335,19 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
     }
 }
 
+
+
+/// It deletes a user
+/// 
+/// Arguments:
+/// 
+/// * `username`: The username of the user to delete
+/// * `password`: The password of the user
+/// * `uid`: The user's unique ID
+/// 
+/// Returns:
+/// 
+/// A ResponseStruct
 fn _delete_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     // delete a user
     let users = read_users();
@@ -332,6 +399,19 @@ fn _clean_empty_accounts() {
 }
 
 
+
+/// It takes a username, old password, uid, and new password, and returns a response struct
+/// 
+/// Arguments:
+/// 
+/// * `username`: username of the user
+/// * `old_password`: The old password of the user
+/// * `uid`: u128,
+/// * `new_password`: The new password
+/// 
+/// Returns:
+/// 
+/// A ResponseStruct
 fn _change_password(username: &str, old_password: &str, uid: u128, new_password: &str) -> ResponseStruct {
     // change password of a user
     let users = read_users();
@@ -373,6 +453,20 @@ fn _change_password(username: &str, old_password: &str, uid: u128, new_password:
     }
 }
 
+
+
+/// It reads the users from a file, checks if the user exists, checks if the password and UID are
+/// correct, and if they are, returns the balance
+/// 
+/// Arguments:
+/// 
+/// * `username`: &str, password: &str, uid: u128
+/// * `password`: The password of the user
+/// * `uid`: The user's unique ID
+/// 
+/// Returns:
+/// 
+/// A ResponseStruct
 fn _get_balance(username: &str, password: &str, uid: u128) -> ResponseStruct {
     // get balance of a user
     let users = read_users();
@@ -404,6 +498,23 @@ fn _get_balance(username: &str, password: &str, uid: u128) -> ResponseStruct {
     }
 }
 
+
+
+/// It takes a TCP stream, reads the first line of the request, splits it into a vector, and then checks
+/// if the request is one of the following:
+/// 
+/// /add_user/
+/// /transaction/
+/// /change_username/
+/// /change_password/
+/// /delete_user/
+/// /get_balance/
+/// 
+/// If it is, it splits the request into a vector again, and then calls the appropriate function
+/// 
+/// Arguments:
+/// 
+/// * `stream`: TcpStream
 fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().expect("[ERROR.THREADPOOL_REQUEST_LINE]").expect("[ERROR.THREADPOOL_REQUEST_LINE]");
@@ -525,6 +636,11 @@ fn handle_connection(mut stream: TcpStream) {
     }
 }
 
+
+
+
+/// It starts a server on port 443, and then for each connection it receives, it spawns a new thread to
+/// handle the connection.
 fn main() {
     if unsafe {IS_LIVE} {
         _print_database();
