@@ -1,5 +1,9 @@
 use std::{fs::File, io::Write};
-use crate::{compute_personal_hash, ResponseStruct, Users, User, IS_LIVE, read_users};
+use crate::{compute_personal_hash, Users, User};
+use crate::lib::hash::encrypt_data;
+use crate::read_users;
+use crate::IS_LIVE;
+use crate::ResponseStruct;
 
 
 
@@ -81,11 +85,11 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
         std::fs::remove_file(format!("data/{}.db", to_search[1])).unwrap();
         // write the new data of the first user
         let mut file = File::create(format!("data/{}.db", to_search[0])).unwrap();
-        let first_user_data = base64_url::encode(serde_json::to_string(&new_users.users_data[0]).unwrap().to_string().as_str());
+        let first_user_data = encrypt_data(serde_json::to_string(&new_users.users_data[0]).unwrap().to_string().as_str());
         file.write_all(first_user_data.as_bytes()).unwrap();
         // write the new data of the second user
         let mut file = File::create(format!("data/{}.db", to_search[1])).unwrap();
-        let second_user_data = base64_url::encode(serde_json::to_string(&new_users.users_data[1]).unwrap().to_string().as_str());
+        let second_user_data = encrypt_data(serde_json::to_string(&new_users.users_data[1]).unwrap().to_string().as_str());
         file.write_all(second_user_data.as_bytes()).unwrap();
 
         

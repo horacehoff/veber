@@ -1,19 +1,29 @@
-use std::{fs::{File}, io::{Read, Write, BufReader, BufRead}, net::TcpStream};
-use magic_crypt::{new_magic_crypt, MagicCryptTrait};
-use serde::{Serialize, Deserialize};
-use sha2::{Digest, Sha512_256, Sha224, Sha512_224};
+use std::io::Read;
+use std::net::TcpStream;
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+use std::io::Write;
+use lib::hash::encrypt_data;
+use lib::hash::decrypt_data;
+use serde::Serialize;
+use serde::Deserialize;
+use sha2::Digest;
+use sha2::Sha512_256;
+use sha2::Sha512_224;
+use sha2::Sha224;
 use threadpool::ThreadPool;
 use transactions::_process_transaction;
 use std::net::TcpListener;
 mod transactions;
-mod lib { pub mod hashing; }
+mod lib { pub mod hash; }
 use try_catch::catch;
 use std::str;
 
-use crate::lib::hashing;
 
+// GLOBALS
 static mut IS_LIVE: bool = true;
-static KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
+static _KEY: &str = "d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
@@ -61,21 +71,21 @@ fn compute_personal_hash(username: &str, password: &str, uid: u128) -> String {
 }
 
 
-// fn base64_url::encode(data: &str) -> String {
+// fn encrypt_data(data: &str) -> String {
 //     let mcrypt = new_magic_crypt!(KEY, 256);
-//     let mut base64_url::encodeed = mcrypt.base64_url::encode_str_to_base64(data);
-//     base64_url::encodeed = mcrypt.base64_url::encode_str_to_base64(base64_url::encodeed.as_str());
-//     return base64_url::encodeed;
+//     let mut encrypt_dataed = mcrypt.encrypt_data_str_to_base64(data);
+//     encrypt_dataed = mcrypt.encrypt_data_str_to_base64(encrypt_dataed.as_str());
+//     return encrypt_dataed;
 // }
 
-// fn base64_url::decode(data: &str) -> String {
+// fn decrypt_data(data: &str) -> String {
 //     let mcrypt = new_magic_crypt!(KEY, 256);
-//     let base64_url::decodeed = mcrypt.base64_url::decode_base64_to_string(data);
-//     match base64_url::decodeed {
-//         Ok(base64_url::decodeed) => {
-//             let base64_url::decodeed_layer_two = mcrypt.base64_url::decode_base64_to_string(base64_url::decodeed.as_str());
-//             match base64_url::decodeed_layer_two {
-//                 Ok(base64_url::decodeed_layer_two) => return base64_url::decodeed_layer_two,
+//     let decrypt_dataed = mcrypt.decrypt_data_base64_to_string(data);
+//     match decrypt_dataed {
+//         Ok(decrypt_dataed) => {
+//             let decrypt_dataed_layer_two = mcrypt.decrypt_data_base64_to_string(decrypt_dataed.as_str());
+//             match decrypt_dataed_layer_two {
+//                 Ok(decrypt_dataed_layer_two) => return decrypt_dataed_layer_two,
 //                 Err(_) => return String::from(""),
 //             }
 //         },
@@ -95,7 +105,7 @@ fn read_users() -> Users {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            contents = str::from_utf8(&base64_url::decode(contents.as_str()).unwrap()).unwrap().to_string();
+            contents = decrypt_data(&contents);
             let user: User = serde_json::from_str(&contents).unwrap();
             users.push(user);
         }
@@ -133,14 +143,14 @@ fn add_new_user(username: &str, password: &str, uid: u128) -> ResponseStruct {
     let users_json = serde_json::to_string(&new_user).unwrap();
     println!("{}", format!("data/{}.db", base64_url::encode(username)));
     let mut file = File::create(format!("data/{}.db", base64_url::encode(username))).unwrap();
-    file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
+    file.write_all(encrypt_data(&users_json).as_bytes()).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("User created")
     }
 }
 
-fn add_admin() {
+fn _add_admin() {
     let users = read_users();
     let mut admin_exists = false;
     for user in users.users_data.iter() {
@@ -155,11 +165,12 @@ fn add_admin() {
             password: String::from("admin"),
             uid: 011,
             personal_hash: personal_hash,
-            balance: 50000.0
+            balance: 500000.0
         };
         let users_json = serde_json::to_string(&new_user).unwrap();
+        println!("{}", format!("data/{}.db", base64_url::encode("admin")));
         let mut file = File::create(format!("data/{}.db", base64_url::encode("admin"))).unwrap();
-        file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
+        file.write_all(encrypt_data(&users_json).as_bytes()).unwrap();
     }
 }
 
@@ -178,7 +189,7 @@ fn _reset_database() {
 }
 
 fn _encrypt_database() {
-    // base64_url::encode all .db files in the db folder
+    // encrypt_data all .db files in the db folder
     let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
@@ -188,7 +199,7 @@ fn _encrypt_database() {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            let encrypted = base64_url::encode(&contents);
+            let encrypted = encrypt_data(&contents);
             let mut file = File::create(path_str).unwrap();
             file.write_all(encrypted.as_bytes()).unwrap();
         }
@@ -196,7 +207,7 @@ fn _encrypt_database() {
 }
 
 fn  _decrypt_database() {
-    // base64_url::decode all .db files in the db folder
+    // decrypt_data all .db files in the db folder
     let files = std::fs::read_dir("data").unwrap();
     for file in files {
         let file = file.unwrap();
@@ -206,7 +217,7 @@ fn  _decrypt_database() {
             let mut file = File::open(path_str).unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents).unwrap();
-            let decrypted = str::from_utf8(&base64_url::decode(&contents).unwrap()).unwrap().to_string();
+            let decrypted = str::from_utf8(&decrypt_data(&contents).as_bytes()).unwrap().to_string();
             let mut file = File::create(path_str).unwrap();
             file.write_all(decrypted.as_bytes()).unwrap();
         }
@@ -261,9 +272,9 @@ fn _change_username(password: &str, uid: u128, old_username: &str, new_username:
         balance: user.balance
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("data/{}.db", base64_url::encode(new_username))).unwrap();
-    file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
-    std::fs::remove_file(format!("data/{}.db", base64_url::encode(old_username))).unwrap();
+    let mut file = File::create(format!("data/{}.db", encrypt_data(new_username))).unwrap();
+    file.write_all(encrypt_data(&users_json).as_bytes()).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt_data(old_username))).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("Username changed")
@@ -316,7 +327,7 @@ fn _clean_empty_accounts() {
         return;
     }
     let user = users.users_data.get(user_index).unwrap();
-    std::fs::remove_file(format!("data/{}.db", base64_url::encode(&user.username))).unwrap();
+    std::fs::remove_file(format!("data/{}.db", encrypt_data(&user.username))).unwrap();
     _clean_empty_accounts();
 }
 
@@ -354,8 +365,8 @@ fn _change_password(username: &str, old_password: &str, uid: u128, new_password:
         balance: user.balance
     };
     let users_json = serde_json::to_string(&new_user).unwrap();
-    let mut file = File::create(format!("data/{}.db", base64_url::encode(username))).unwrap();
-    file.write_all(base64_url::encode(&users_json).as_bytes()).unwrap();
+    let mut file = File::create(format!("data/{}.db", encrypt_data(username))).unwrap();
+    file.write_all(encrypt_data(&users_json).as_bytes()).unwrap();
     return ResponseStruct {
         status: String::from("SUCCESS"),
         message: String::from("Password changed")
@@ -515,7 +526,6 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 fn main() {
-    // println!("{}", hashing::base64_url::decode(hashing::base64_url::encode("Dude that's so cool").as_str()));
     if unsafe {IS_LIVE} {
         _print_database();
         println!("Starting server...");
