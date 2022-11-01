@@ -2,7 +2,6 @@ use std::str::from_utf8;
 use crate::KEY;
 use simplecrypt::{encrypt, decrypt};
 
-
 pub fn encrypt_data(raw: &str) -> String {
     let mut numbers: Vec<i32> = Vec::new();
     for byte in encrypt(base64_url::encode(raw).as_bytes(), base64_url::encode(KEY).as_bytes()) {
@@ -13,6 +12,7 @@ pub fn encrypt_data(raw: &str) -> String {
         result.push_str(&number.to_string());
         result.push_str("204792");
     }
+
     return base64_url::encode(&result);
 }
 
