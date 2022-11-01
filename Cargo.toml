@@ -15,6 +15,7 @@ try-catch = "0.2.2"
 flate2 = { version = "1.0.17", features = ["zlib-ng"], default-features = false }
 base64-url = "1.4.13"
 simplecrypt = "1.0.2"
+threads_pool = "0.2.6"
 
 [dependencies.num-traits]
 version = "0.2"
