@@ -8,7 +8,6 @@ use std::io::BufReader;
 use std::io::Write;
 use std::time::Duration;
 use colored::Colorize;
-use hyper::server::conn::AddrStream;
 use lib::hash::encrypt_data;
 use lib::hash::decrypt_data;
 use serde::Serialize;
@@ -25,11 +24,6 @@ extern crate threads_pool;
 use threads_pool::*;
 use try_catch::catch;
 use std::str;
-
-use std::convert::Infallible;
-use std::net::SocketAddr;
-use hyper::{Body, Request, Response, Server};
-use hyper::service::{make_service_fn, service_fn};
 
 
 // GLOBALS
