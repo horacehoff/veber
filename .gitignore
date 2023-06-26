@@ -1,0 +1,28 @@
+target/
+debug/
+Cargo.lock
+
+# Logs
+veber_ux/logs
+veber_ux/*.log
+veber_ux/npm-debug.log*
+veber_ux/yarn-debug.log*
+veber_ux/yarn-error.log*
+veber_ux/pnpm-debug.log*
+veber_ux/lerna-debug.log*
+
+veber_ux/node_modules
+veber_ux/dist
+veber_ux/dist-ssr
+veber_ux/*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

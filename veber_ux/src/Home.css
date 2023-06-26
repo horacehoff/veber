@@ -1,0 +1,36 @@
+.title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    position: absolute;
+    top: 150px;
+    left: 50%;
+    transform:translate(-50%, -50%);
+    font-size: 80px;
+}
+.subtitle {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    position: absolute;
+    top: 250px;
+    left: 50%;
+    transform:translate(-50%, -50%);
+    font-size: 25px;
+}
+.container {
+    background-color: rgba(66, 66, 66, 0.541);
+    width: 350px;
+    height: 150px;
+    border-radius: 16px;
+    position: absolute;
+    display: inline-block;
+    vertical-align: middle;
+}
+.container-title {
+    position: absolute;
+    top: 25px;
+}
+.container-action-button {
+    position: absolute;
+    left: 135px;
+    top: 90px;
+}

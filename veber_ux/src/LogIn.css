@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;900&display=swap');
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+.app {
+  text-align: center;
+}
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 900;
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  transform:translate(-50%, -50%);
+  font-size: 80px;
+}
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  position: absolute;
+  top: 250px;
+  left: 50%;
+  transform:translate(-50%, -50%);
+  font-size: 25px;
+}
+.action-button {
+  width: 267px;
+  margin-top: 25px;
+  transition: .25s;
+  border: 0;
+  outline: 0;
+}
+.action-button:hover {
+  width: 285px;
+}
+
+input {
+  width: 260px;
+  height: 40px;
+  margin: 10px 0 5px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  border-radius: 6px;
+  outline: 0;
+  border: 0;
+  padding-left: 7px;
+  transition: 0.25s;
+}
+input:focus {
+  width: 275px;
+  padding-left: 10px;
+}
