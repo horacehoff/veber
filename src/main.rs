@@ -684,12 +684,14 @@ fn main() {
         for stream in listener.incoming() {
             catch! {
             try {
+                                        // _add_admin();
                 assert!(stream.is_ok() && stream.as_ref().unwrap().peer_addr().is_ok() && unsafe{IS_LIVE});
                 // assert!(stream.as_ref().unwrap().peer_addr().unwrap().ip().is_loopback());
                 let stream = stream.unwrap();
                 thread_pool.execute(move || {
                     handle_connection(stream);
                 }).unwrap();
+                    // _add_admin();
             }
             catch _error {
                 println!("[ERROR.THREADPOOL_CONNECTION_HANDLING]");

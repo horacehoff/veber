@@ -1,24 +1,29 @@
 [package]
-name = "untitled_economy"
+name = "veber"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.160", features = ["derive"] }
-serde_json = "1.0.96"
-sha2 = "0.10.6"
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.115"
+sha2 = "0.10.8"
 try-catch = "0.2.2"
-base64-url = "2.0.0"
+base64-url = "2.0.2"
 simplecrypt = "1.0.2"
 threads_pool = "0.2.6"
 obfstr = "0.4.3"
-colored = "2.0.0"
+colored = "2.1.0"
 
 [profile.release]
+opt-level = 3
 lto = true
 codegen-units = 1
+panic = 'abort'
+debug = false
+rpath = false
+incremental = false
 
 [profile.release.package."*"]
 opt-level = 3
