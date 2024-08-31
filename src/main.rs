@@ -1,9 +1,7 @@
 use std::fs;
-use std::io::Read;
-use std::net::Shutdown;
-use std::net::TcpStream;
+use std::net::{Shutdown, TcpStream};
 use std::fs::File;
-use std::io::{Write, BufReader, BufRead};
+use std::io::{Write, BufReader, BufRead, Read};
 use std::time::Duration;
 use colored::Colorize;
 use lib::hash::encrypt_data;
