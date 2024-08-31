@@ -97,12 +97,12 @@ pub fn _process_transaction(username_sender: &str, password_sender: &str, uid_se
             let admin_user_data = encrypt_data(serde_json::to_string(&new_users.users_data[2]).unwrap().to_string().as_str());
             file.write_all(admin_user_data.as_bytes()).unwrap();
         }
-        return ResponseStruct {
+        ResponseStruct {
             status: String::from("SUCCESS"),
             message: String::from("Transaction successful")
         }
     } else {
-        return ResponseStruct {
+        ResponseStruct {
             status: String::from("ERROR"),
             message: String::from("Transaction failed")
         }
