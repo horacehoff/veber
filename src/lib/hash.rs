@@ -14,7 +14,7 @@ pub fn encrypt_data(raw: &str) -> String {
 
     // encrypt to aes and convert to string
     // let encrypted = encrypt_aes(result);
-    return base64_url::encode(&result);
+    base64_url::encode(&result)
 }
 
 pub fn decrypt_data(raw: &str) -> String {
@@ -30,5 +30,5 @@ pub fn decrypt_data(raw: &str) -> String {
     for number in numbers {
         bytes.push(number as u8);
     }
-    return from_utf8(&base64_url::decode(&from_utf8(&decrypt(&bytes, base64_url::encode(obfstr::obfstr!("d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27")).as_bytes()).unwrap()).unwrap()).unwrap()).unwrap().to_owned();
+    from_utf8(&base64_url::decode(&from_utf8(&decrypt(&bytes, base64_url::encode(obfstr::obfstr!("d7b27ab68a4271dab68ab68ab68ab68e5ab6832e1b2965fc04fea48ac6adb7da547b27")).as_bytes()).unwrap()).unwrap()).unwrap()).unwrap().to_owned()
 }
