@@ -5,7 +5,7 @@ use std::net::TcpStream;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::io::Write;
+use std::io::{Write};
 use std::time::Duration;
 use colored::Colorize;
 use lib::hash::encrypt_data;
