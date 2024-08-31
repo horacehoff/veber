@@ -1,15 +1,13 @@
 use std::fs;
-use std::net::{Shutdown, TcpStream};
+use std::net::{Shutdown, TcpStream, TcpListener};
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead, Read};
 use std::time::Duration;
 use colored::Colorize;
 use lib::hash::{encrypt_data, decrypt_data};
-use serde::Serialize;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use sha2::{Digest,Sha512_256,Sha512_224, Sha224};
 use transactions::_process_transaction;
-use std::net::TcpListener;
 mod transactions;
 mod lib { pub mod hash; }
 extern crate threads_pool;
