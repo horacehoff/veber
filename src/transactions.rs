@@ -16,7 +16,7 @@ pub fn _check_transaction_hash(username: &str, password: &str, uid: u128) -> boo
             return true;
         }
     }
-    return false;
+    false
 }
 
 pub fn _get_user_balance(username: &str, password: &str, uid: u128) -> f64 {
@@ -26,19 +26,19 @@ pub fn _get_user_balance(username: &str, password: &str, uid: u128) -> f64 {
             return user.balance;
         }
     }
-    return 0.0;
+    0.0
 }
 
 pub fn _check_transaction(username_sender: &str, password_sender: &str, uid_sender: u128, amount: f64) -> bool {
     if _check_transaction_hash(username_sender, password_sender, uid_sender) {
         // process transaction
         if (_get_user_balance(username_sender, password_sender, uid_sender) - amount - TRANSACTION_FEE) >= 0.0 {
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     } else {
-        return false;
+        false
     }
 }
 
